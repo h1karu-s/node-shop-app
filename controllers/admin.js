@@ -13,8 +13,12 @@ exports.getAddProduct = (req,res) => {
 exports.postAddProduct = (req,res) => {
   const {title,imageUrl,price,description} = req.body
     const product = new Product(null,title,imageUrl,description,price);
-    product.save();
-    res.redirect('/');
+    product.save()
+    .then(() => {
+      res.redirect('/');
+    })
+    .catch(err => console.log(err))
+   
   }
 
 
@@ -59,3 +63,9 @@ exports.getProducts = (req,res) => {
     });
   });
 };
+
+exports.postDeleteProduct = (req,res) => {
+  const productId = req.body.productId;
+  Product.deleteById(productId);
+  res.redirect('/admin/products');
+}

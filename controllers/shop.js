@@ -1,48 +1,75 @@
 const Product = require('../models/product');
 const Cart = require('../models/cart');
+const { findById } = require('../models/product');
 
 exports.getProducts = (req,res) => {
-    const products = Product.fetchAll((products) => {
+    Product.fetchAll()
+      .then(([rows,filedData]) => {
         res.render('shop/product-list',{
-        prods:products,
-        pageTitle:'All products',
-        path:'/products'
+          prods:rows,
+          pageTitle:'All products',
+          path:'/products'
+        })
       })
-    });
-    // res.sendFile(path.join(__dirname,'../views','shop.html'))
-  
-  }
+      .catch(err => console.log(err));
+ };
 
 
 exports.getProduct = (req,res) => {
   const productId = req.params.productId;
-  Product.findById(productId, product => {
+  Product.findById(productId)
+  .then(([product]) => {
     console.log(product);
     res.render('shop/product-detail',{
-      product,
+      product:product[0],
       pageTitle:product.title,
       path:'/products'
     })
-  });
+  })
+  .catch(err => console.log(err)); 
 };
 
 
 exports.getIndex = (req,res) => {
-  const products = Product.fetchAll((products) => {
+  Product.fetchAll()
+  .then(([rows,filedData]) => {
     res.render('shop/Index',{
-    prods:products,
-    pageTitle:'shop',
-    path:'/'
+      prods:rows,
+      pageTitle:'shop',
+      path:'/'
   })
-});
+  })
+  .catch(err => console.log(err));
+
 }
 
 
 exports.getCart = (req,res) => {
-  res.render('shop/cart',{
-    pageTitle:'Your Cart',
-    path:'/cart'
+  Cart.getCart(cart => {
+    if(!cart){   //cart=nullの場合productsに空の配列を渡す。
+      return  res.render('shop/cart',{
+        pageTitle:'Your Cart',
+        path:'/cart',
+        products:[]
+      });
+    }
+
+    Product.fetchAll(products => {
+      const cartProducts =[];
+      for(product of products){
+        const cartProductData =cart.products.find(prod => prod.id === product.id);
+        if(cartProductData){
+          cartProducts.push({productData:product,qty:cartProductData.qty});
+        }
+      }
+     res.render('shop/cart',{
+        pageTitle:'Your Cart',
+        path:'/cart',
+        products:cartProducts
+      })
+    })
   })
+  
 }
 
 exports.postCart = (req,res) => {
@@ -51,6 +78,14 @@ exports.postCart = (req,res) => {
     Cart.addProduct(productId,product.price);
   });
   res.redirect('/cart');
+}
+
+exports.postCaetDeleteProduct = (req,res) => {
+  const productId =req.body.productId;
+  findById(productId,product => {
+    Cart.deleteProduct(productId,product.price);
+    res.redirect('/cart');
+  });
 }
 
 exports.getOrders = (req,res) => {

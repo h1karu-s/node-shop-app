@@ -14,5 +14,7 @@ router.get('/edit-product/:productId',adminContoroller.getEditProduct);
 
 router.post('/edit-product',adminContoroller.postEditProduct);
 
+router.post('/delete-product',adminContoroller.postDeleteProduct);
+
 
 module.exports = router;
