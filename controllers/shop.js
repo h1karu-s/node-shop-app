@@ -95,7 +95,7 @@ exports.postCart = (req,res) => {
   req.user.getCart()
   .then(cart => {
     fetchedCart =cart;
-    return cart.getProducts({where:{id:productId}});
+    return cart.getProducts({where:{id:productId}});  //cart-product many to many
   })
   .then(products => {
     let product;
@@ -168,7 +168,7 @@ exports.postOrder = (req,res) => {
 }
 
 exports.getOrders = (req,res) => {
-  req.user.getOrders({include:['products']})
+  req.user.getOrders({include:Product}) //option : include => querying data of associated models at once!
   .then(orders => {
     console.log(orders)
     res.render('shop/orders',{
