@@ -1,24 +1,18 @@
-// const mysql = require('mysql2');
+const mongodb = require('mongodb');
+const MongoClient = mongodb.MongoClient;
 
-// const pool = mysql.createPool({
-//   host:'localhost',
-//   user:'root',
-//   password:'hikaru@t18ac019',
-//   database:'node-complete',
-// });
+const MONGODB_URL = process.env.MONGODB_URL;
 
-// module.exports = pool.promise();
+const mongoConnect = (callback) => {
+  MongoClient.connect(MONGODB_URL)
+  .then(client => {
+    console.log('Connect');
+    callback(client);
+  })
+  .catch(err => {
+    console.log(err);
+  });
+};
 
-//>>>>>>  sequelizeは裏でmysql2を使用する。
+module.exports = mongoConnect;
 
-//以下 sequelize使用
-
-const Sequelize = require('sequelize');
-
-//using connection pool
-const sequelize = new Sequelize('node-complete','root','hikaru@t18ac019',{
-  host:'localhost',
-  dialect:'mysql'
-});
-
-module.exports = sequelize;
