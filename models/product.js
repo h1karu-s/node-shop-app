@@ -1,29 +1,62 @@
-const {DataTypes} = require('sequelize');
+const {getDb} = require('../util/database');
+const { ObjectID } = require('mongodb');
 
-const sequelize = require('../util/database');
 
-const Product = sequelize.define('product',{
-  id:{
-    type:DataTypes.INTEGER,
-    autoIncrement:true,
-    allowNull:false,
-    primaryKey:true
-  },
-  title:{
-    type:DataTypes.STRING
-  },
-  price:{
-    type:DataTypes.DOUBLE,
-    allowNull:false
-  },
-  imageUrl:{
-    type:DataTypes.STRING,
-    allowNull:false
-  },
-  description:{
-    type:DataTypes.STRING,
-    allowNull:false
+
+
+class Product {
+  constructor(title,price,imageUrl,description,id,userId){
+    this.title = title;
+    this.price = price;
+    this.description = description;
+    this.imageUrl = imageUrl;
+    if(id){
+      this._id = ObjectID.createFromHexString(id);
+    }
+    this.userId = userId;  
   }
-});
+
+  save(){ 
+     const db = getDb();
+     const products = db.collection('products');  // make collection
+     if(this._id){
+       return products.updateOne({_id:this._id},{$set:this})
+      }
+     return products.insertOne(this);
+  };
+
+  static fetchAll(){
+    const db = getDb();
+    return db.collection('products').find().toArray()  //toArray cursor method
+     .then(products => {
+      //  console.log(products);
+       return products;
+     })
+     .catch(err => console.log(err));
+  }
+
+  static findById(productId){
+    const db = getDb();
+    return db.collection('products').findOne({_id:ObjectID.createFromHexString(productId)})
+    .then(product => {
+      // console.log(product);
+      return product;
+    })
+    .catch(err => console.log(err));
+  }
+  
+  static  update(productId,update){
+    const db = getDb();
+    return db.collection('products').updateOne({_id:ObjectID.createFromHexString(productId)},{$set:update})
+     
+  }
+
+  static deleteById(productId){
+    const db =getDb();
+    return db.collection('products').deleteOne({_id:ObjectID.createFromHexString(productId)});
+  }
+}
+
+
 
 module.exports = Product;
