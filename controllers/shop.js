@@ -1,10 +1,11 @@
 const Product = require('../models/product');
+const Order = require('../models/order');
 
 
 exports.getProducts = (req,res) => {
-  Product.fetchAll()
+  Product.find()
   .then(products => {
-    // console.log(products)
+    console.log(products)
     res.render('shop/product-list',{
       prods:products,
       pageTitle:'All Products',
@@ -34,7 +35,7 @@ exports.getProduct = (req,res) => {
 
 
 exports.getIndex = (req,res) => {
-  Product.fetchAll()
+  Product.find()
   .then(products => {
     res.render('shop/Index',{
       prods:products,
@@ -50,9 +51,11 @@ exports.getIndex = (req,res) => {
 
 
 exports.getCart =  (req,res) => {
-
-req.user.getCart()
-.then(products => {
+req.user
+.populate('cart.items.productId')
+.execPopulate()
+.then(user => {
+  const products = user.cart.items;
   console.log(products)
   res.render('shop/cart',{
     pageTitle:'Your Cart',
@@ -79,8 +82,8 @@ exports.postCart = (req,res) => {
 }
 
 exports.postCartDeleteProduct = (req,res) => {
-  const productId =req.body.productId;
-  req.user.deleteCartItem(productId)
+  const productId = req.body.productId;
+  req.user.removeFromCart(productId)
   .then(result => {
     console.log('delete!!!');
     res.redirect('/cart');
@@ -90,24 +93,40 @@ exports.postCartDeleteProduct = (req,res) => {
 }
 
 exports.postOrder = (req,res) => {
-  req.user.addOrder()
+  req.user
+  .populate('cart.items.productId')
+  .execPopulate()
+  .then(user => {
+  const products = user.cart.items.map(item => {
+    return {product:{...item.productId},quantity:item.quantity};
+  });
+  const order = new Order({
+    user:{
+      email:req.user.email,
+      userId:req.user
+    },
+    products
+  })
+  return order.save();
+  })
+  .then(result => {
+    return req.user.clearCart();
+  })
   .then(() => {
     res.redirect('/orders');
   })
   .catch(err => console.log(err));
-  
 }
 
 exports.getOrders = (req,res) => {
-  req.user.getOrders()
+  Order.find({'user.userId':req.user._id})
   .then(orders => {
-    console.log(orders)
     res.render('shop/orders',{
       pageTitle:'Your Orders',
       path:'/orders',
       orders:orders
     })
   })
-  .catch(err => console.log(err)); 
+  .catch(err => console.log(err));
 }
 
