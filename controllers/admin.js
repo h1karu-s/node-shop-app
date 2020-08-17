@@ -1,3 +1,5 @@
+const {validationResult} = require('express-validator');
+
 const Product = require('../models/product');
 const product = require('../models/product');
 
@@ -8,13 +10,34 @@ exports.getAddProduct = (req,res) => {
   res.render('admin/edit-product',{
     pageTitle:'Add Product',
     path:'/admin/add-product',
-    editing:false
+    editing:false,
+    hasError:false,
+    errorMessage:null,
+    validationErrors:[]
   })}
 
 
 
 exports.postAddProduct = (req,res) => {
   const {title,price,description,imageUrl} = req.body;
+  const errors = validationResult(req);
+  console.log(errors.array());
+  if(!errors.isEmpty()){
+    return  res.status(422).render('admin/edit-product',{
+      pageTitle:'Add Product',
+      path:'/admin/edit-product',
+      editing:false,
+      hasError:true,
+      product:{
+        title,
+        imageUrl,
+        price,
+        description
+      },
+      errorMessage:errors.array()[0].msg,
+      validationErrors:errors.array()
+    })
+  }
     const product = new Product({
       title,
       price,
@@ -47,7 +70,10 @@ exports.getEditProduct = (req,res) => {
         pageTitle:'Edit Product',
         path:'/admin/edit-product',
         editing:editMode,
-        product
+        hasError:false,
+        product,
+        errorMessage:null,
+        validationErrors:[]
       })
     })
     .catch(err => console.log(err));
@@ -61,6 +87,26 @@ exports.postEditProduct = (req,res) => {
   const updatedPrice = req.body.price;
   const updatedImageUrl = req.body.imageUrl;
   const updatedDescription = req.body.description;
+  const errors = validationResult(req);
+  console.log(errors.array());
+  if(!errors.isEmpty()){
+    return  res.status(422).render('admin/edit-product',{
+      pageTitle:'Edit Product',
+      path:'/admin/edit-product',
+      editing:true,
+      hasError:true,
+      product:{
+        title:updatedTitle,
+        imageUrl:updatedImageUrl,
+        price:updatedPrice,
+        description:updatedDescription,
+        _id:productId
+      },
+      errorMessage:errors.array()[0].msg,
+      validationErrors:errors.array()
+    })
+  }
+
   Product.findById(productId)
   .then(product => {
     if(product.userId.toString() !== req.user._id.toString()){
