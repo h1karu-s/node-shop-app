@@ -81,8 +81,9 @@ exports.postLogin = (req,res) => {
       });
     })
     .catch(err => {
-      console.log(err);
-      res.redirect('/login');
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
     })
    })
 }
@@ -116,7 +117,9 @@ exports.postSignup = (req, res, next) => {
       comfirmedEmail(email);
     })
   .catch(err => {
-    console.log(err);
+    const error = new Error(err);
+    error.httpStatusCode = 500;
+    return next(error);
   });
 };
 
@@ -163,7 +166,9 @@ exports.postReset = (req,res,next) => {
       resetEmail(req.body.email,token);
     })
     .catch(err => {
-      console.log(err);
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
     })
   })
 }
@@ -188,7 +193,9 @@ exports.getNewPassword = (req,res,next) => {
     })
   })
   .catch(err => {
-    console.log(err);
+    const error = new Error(err);
+    error.httpStatusCode = 500;
+    return next(error);
   })
 
 }
