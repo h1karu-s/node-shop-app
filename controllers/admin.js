@@ -2,6 +2,8 @@ const {validationResult} = require('express-validator');
 const mongoose = require('mongoose');
 
 const Product = require('../models/product');
+const fileHelper = require('../util/file');
+const product = require('../models/product');
 
 
 
@@ -19,8 +21,25 @@ exports.getAddProduct = (req,res) => {
 
 
 exports.postAddProduct = (req,res,next) => {
-  const {title,price,description,imageUrl} = req.body;
+
+  const {title,price,description} = req.body;
+  const image = req.file;
   const errors = validationResult(req);
+  if(!image){
+    return  res.status(422).render('admin/edit-product',{
+      pageTitle:'Add Product',
+      path:'/admin/edit-product',
+      editing:false,
+      hasError:true,
+      product:{
+        title,
+        price,
+        description
+      },
+      errorMessage:'Attached file is not an image.',
+      validationErrors:[]
+    })
+  }
   console.log(errors.array());
   if(!errors.isEmpty()){
     return  res.status(422).render('admin/edit-product',{
@@ -30,7 +49,6 @@ exports.postAddProduct = (req,res,next) => {
       hasError:true,
       product:{
         title,
-        imageUrl,
         price,
         description
       },
@@ -38,6 +56,9 @@ exports.postAddProduct = (req,res,next) => {
       validationErrors:errors.array()
     })
   }
+
+  const imageUrl = image.path;  
+
     const product = new Product({
       // _id:mongoose.Types.ObjectId('5f3a03755b5e5e48981da287'),
       title,
@@ -105,11 +126,11 @@ exports.getEditProduct = (req,res,next) => {
 
 
 
-exports.postEditProduct = (req,res) => {
+exports.postEditProduct = (req,res,next) => {
   const productId = req.body.productId;
   const updatedTitle = req.body.title;
   const updatedPrice = req.body.price;
-  const updatedImageUrl = req.body.imageUrl;
+  const image = req.file;
   const updatedDescription = req.body.description;
   const errors = validationResult(req);
   console.log(errors.array());
@@ -138,7 +159,10 @@ exports.postEditProduct = (req,res) => {
     }
     product.title = updatedTitle;
     product.price = updatedPrice;
-    product.imageUrl = updatedImageUrl;
+    if(image){
+      fileHelper.deleteFile(product.imageUrl);
+      product.imageUrl = image.path;
+    }
     product.description = updatedDescription;
     product.save()
   })
@@ -176,7 +200,14 @@ exports.getProducts = (req,res) => {
 
 exports.postDeleteProduct = (req,res) => {
   const productId = req.body.productId;
-  Product.findByIdAndRemove(productId)
+  Product.findById(productId)
+  .then(product => {
+    if(!product){
+      return next(new Error('product not found.'));
+    }
+    fileHelper.deleteFile(product.imageUrl);
+    return Product.deleteOne({_id:productId,userId:req.user._id});
+  })
   .then(product => {
      console.log('delete');
      res.redirect('/admin/products');
